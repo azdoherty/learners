@@ -4,8 +4,8 @@ from gym import wrappers
 from matplotlib import pyplot as plt
 import time
 import pandas as pd
-import shutil
-import learners.learners as learners
+import os
+import learners
 
 class learnerTest():
     def __init__(self, envType, learnerClass, alpha, gamma, rdr, rdrdecay, verbose=False,filename=None):
@@ -26,7 +26,7 @@ class learnerTest():
         except:
             self.n_states = np.inf
             self.n_actions = self.env.action_space.n
-        self.learner = learnerClass(self.n_states, self.n_actions)
+        self.learner = learnerClass(self.n_states, self.n_actions, self.alpha, self.gamma)
         self.eps_avg_reward = None
 
     def train(self, episodes, steps):
@@ -36,7 +36,7 @@ class learnerTest():
             for j in range(steps):
                 action = self.learner.predict(state)
                 newState, reward, done, info = self.env.step(action)
-                self.learner.update(self, state, action, reward, newState, done)
+                self.learner.update(state, action, reward, newState, done)
                 state = newState
                 self.eps_avg_reward[i] += reward
                 if done:
@@ -57,12 +57,15 @@ class learnerTest():
 
 
 if __name__ == "__main__":
+    if not os.path.exists("output"):
+        os.mkdir("output")
     env = "FrozenLake8x8-v0"
     learner = learners.Qlearner
     episodes = 1000
     steps = 200
-    lakeExample = learnerTest(env, learner, .2, .8, .2, .999)
-    lakeExample.train(episodes.steps)
+    lakeExample = learnerTest(env, learner, .2, .8, .2, .999, True)
+    lakeExample.train(episodes, steps)
+    lakeExample.plot_rewards(os.path.join("output", "test.png"))
 
 
 
