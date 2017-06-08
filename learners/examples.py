@@ -5,10 +5,10 @@ from matplotlib import pyplot as plt
 import time
 import pandas as pd
 import shutil
-
+import learners.learners as learners
 
 class learnerTest():
-    def __init__(self, envType, learnerClass, timeout, alpha, gamma, rdr, rdrdecay, verbose=False,filename=None):
+    def __init__(self, envType, learnerClass, alpha, gamma, rdr, rdrdecay, verbose=False,filename=None):
         self.envType = envType
         self.env = gym.make(envType)
         self.filename = filename
@@ -20,8 +20,6 @@ class learnerTest():
         self.rdr = rdr
         self.rdrdecay = rdrdecay
         self.verbose = verbose
-
-        self.timeout = timeout
         try:
             self.n_states =  self.env.observation_space.n
             self.n_actions =  self.env.action_space.n
@@ -51,10 +49,20 @@ class learnerTest():
     def plot_rewards(self, plotFile = None):
         rewardPlot = plt.figure()
         plt.plot(self.eps_avg_reward)
+        plt.xlabel("episode")
+        plt.ylabel("average reward")
+        if plotFile:
+            plt.savefig(plotFile)
+        plt.close()
 
 
-
-
+if __name__ == "__main__":
+    env = "FrozenLake8x8-v0"
+    learner = learners.Qlearner
+    episodes = 1000
+    steps = 200
+    lakeExample = learnerTest(env, learner, .2, .8, .2, .999)
+    lakeExample.train(episodes.steps)
 
 
 
