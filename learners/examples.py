@@ -51,7 +51,8 @@ class learnerTest():
             state = self.env.reset()
             oldtable = np.copy(self.learner.qtable)
             for j in range(steps):
-                self.env.render()
+                if self.verbose:
+                    self.env.render()
                 action = self.learner.predict(state)
                 newState, reward, done, info = self.env.step(action)
                 self.learner.update(state, action, reward, newState, done)
@@ -71,7 +72,7 @@ class learnerTest():
         rewardPlot = plt.figure()
         ser = pd.Series(self.eps_avg_reward)
         rolling_avg = ser.rolling(center=False, window=100).mean()
-        best_avg = rolling_avg.amx
+        best_avg = rolling_avg.max()
         #plt.plot(self.eps_avg_reward, label="average reward")
         plt.plot(rolling_avg, label="{} window rolling average".format(window))
         plt.xlabel("episode")
@@ -94,7 +95,7 @@ class learnerTest():
 
     def plot_updates(self, plotFile=None):
         step_plot = plt.figure()
-        plt.plot(self.q_update)
+        plt.semilogy(self.q_update)
         plt.xlabel("Episode")
         plt.ylabel("Delta Q")
         plt.title("Delta Q per Episode")
@@ -113,11 +114,13 @@ if __name__ == "__main__":
     gamma = .2
     random_rate = .999
     random_decay_rate = .999
-    lakeExample = learnerTest(env, learner, alpha, gamma, random_rate, random_decay_rate, True)
-    lakeExample.train(episodes, steps)
-    lakeExample.plot_rewards(100, os.path.join("output", "rewards.png"))
-    lakeExample.plot_stats(os.path.join("output", "steps.png"))
-    lakeExample.plot_updates(os.path.join("output", "q.png"))
+    verbose = True
+    example = learnerTest(env, learner, alpha, gamma, random_rate, random_decay_rate, verbose=False)
+    example.train(episodes, steps)
+    example.plot_rewards(100, os.path.join("output", "rewards.png"))
+    example.plot_stats(os.path.join("output", "steps.png"))
+    example.plot_updates(os.path.join("output", "q.png"))
+    print(example.q_update)
 
 
 
