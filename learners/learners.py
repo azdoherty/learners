@@ -4,7 +4,8 @@ import numpy as np
 class Qlearner():
     def __init__(self, n_states, n_actions, alpha, gamma, random_rate=.1, random_decay=.9):
         """
-        Q learner to
+        Q learner to solve a reinforcement learning problem, based on the algorithm on wikipedia:
+        https://en.wikipedia.org/wiki/Q-learning
         :param n_states: int - number of states in state space
         :param n_actions: int - number of actions available at each state
         :param alpha: float - learning rate
