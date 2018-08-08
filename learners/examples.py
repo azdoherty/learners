@@ -7,11 +7,12 @@ import pandas as pd
 import os
 import learners
 
-class learnerTest():
+class LearnerTest():
     def __init__(self, envType, learnerClass, alpha, gamma, rdr, rdrdecay, verbose=False, filename=None):
         self.envType = envType
         self.env = gym.make(envType)
-        self.env.render()
+        if verbose:
+            self.env.render()
         self.filename = filename
         if filename:
             gym.wrappers.Monitor(self.env, filename)
@@ -74,6 +75,7 @@ class learnerTest():
         rolling_avg = ser.rolling(center=False, window=100).mean()
         best_avg = rolling_avg.max()
         #plt.plot(self.eps_avg_reward, label="average reward")
+        plt.plot(self.eps_avg_reward, label="each episode")
         plt.plot(rolling_avg, label="{} window rolling average".format(window))
         plt.xlabel("episode")
         plt.ylabel("average reward")
@@ -103,24 +105,54 @@ class learnerTest():
             plt.savefig(plotFile)
         plt.close()
 
+    def plot_metrics(self, plotFile=None):
+        plt.figure()
+
+        # reward and average reward
+        plt.subplot(211)
+        plt.title("Reward")
+        ser = pd.Series(self.eps_avg_reward)
+        rolling_avg = ser.rolling(center=False, window=100).mean()
+        plt.plot(self.eps_avg_reward, label="each episode")
+        plt.plot(rolling_avg, label="{} window rolling average".format(100))
+        plt.ylabel("average reward")
+        plt.legend()
+
+        #
+        plt.subplot(212)
+        plt.title("Steps to Solve")
+        plt.plot(self.steps_to_solve, label="steps")
+        ser = pd.Series(self.steps_to_solve)
+        rolling_avg = ser.rolling(center=False, window=100).mean()
+        plt.plot(rolling_avg, label="{} window rolling average".format(100))
+        plt.xlabel("Episode")
+        plt.ylabel("steps")
+        plt.title("Steps To Solve")
+        plt.legend()
+
+        if plotFile:
+            plt.savefig(plotFile)
+        else:
+            plt.show()
+
 if __name__ == "__main__":
     if not os.path.exists("output"):
         os.mkdir("output")
     env = "Taxi-v2"
     learner = learners.Qlearner
-    episodes = 5000
+    episodes = 1000
     steps = 200
     alpha = .5
     gamma = .2
     random_rate = .999
-    random_decay_rate = .999
+    random_decay_rate = .8
     verbose = True
-    example = learnerTest(env, learner, alpha, gamma, random_rate, random_decay_rate, verbose=False)
+    example = LearnerTest(env, learner, alpha, gamma, random_rate, random_decay_rate, verbose=False)
     example.train(episodes, steps)
-    example.plot_rewards(100, os.path.join("output", "rewards.png"))
-    example.plot_stats(os.path.join("output", "steps.png"))
-    example.plot_updates(os.path.join("output", "q.png"))
-    print(example.q_update)
+    #example.plot_rewards(100, os.path.join("output", "rewards.png"))
+    #example.plot_stats(os.path.join("output", "steps.png"))
+    #example.plot_updates(os.path.join("output", "q.png"))
+    example.plot_metrics()
 
 
 

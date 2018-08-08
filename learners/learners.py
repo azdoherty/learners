@@ -1,5 +1,7 @@
 import numpy as np
-
+import os
+print(os.environ['PATH'])
+import tensorflow as tf
 
 class Qlearner():
     def __init__(self, n_states, n_actions, alpha, gamma, random_rate=.1, random_decay=.9):
@@ -52,3 +54,8 @@ class Qlearner():
     def evaluate_update(self, old):
         res = np.sum((self.qtable - old)**2)
         return res
+
+
+class DeepLearner(Qlearner):
+    def __init__(self, n_states, n_actions, alpha, gamma, random_rate=.1, random_decay=.9):
+        Qlearner.__init__(n_states, n_actions, alpha, gamma, random_rate=.1, random_decay=.9)
