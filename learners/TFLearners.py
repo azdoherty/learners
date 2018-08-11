@@ -8,8 +8,8 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 # optimization
 learning_rate = 0.0001
-epochs = 10
-batch_size = 50
+epochs = 5
+batch_size = 500
 
 # declare the training data placeholders
 # input x - for 28 x 28 pixels = 784 - this is the flattened image data that is drawn from
