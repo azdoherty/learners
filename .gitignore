@@ -1,3 +1,4 @@
 *.pyc
 /learners/output
 /learners/datasets
+/learners/.idea

@@ -1,6 +1,7 @@
 import tensorflow as tf
 # taken from example here: http://adventuresinmachinelearning.com/convolutional-neural-networks-tutorial-tensorflow/
 # added docstrings for clarity and worked comments directly into code
+# datasets to playwith
 
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
