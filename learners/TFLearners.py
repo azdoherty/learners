@@ -1,5 +1,8 @@
 import tensorflow as tf
 import numpy as np
+from scipy.io import loadmat
+import cv2
+
 # taken from example here: http://adventuresinmachinelearning.com/convolutional-neural-networks-tutorial-tensorflow/
 # added docstrings for clarity and worked comments directly into code
 # datasets to playwith
@@ -44,7 +47,7 @@ def create_new_conv_layer(input_data, num_input_channels, num_filters, filter_sh
 # output of layer 1 must equal input channels of layer 2
 
 class TensorFlowNeuralNetwork:
-    def __init__(self, xshape, yshape, learning_rate=.0001):
+    def __init__(self, xshape, yshape, nclasses, learning_rate=.0001):
         # optimization
         self.learning_rate = 0.0001
 
@@ -52,14 +55,16 @@ class TensorFlowNeuralNetwork:
         size = xshape * yshape
         self.x = tf.placeholder(tf.float32, [None, size])
         # dynamically reshape the input into 4d object as required by TF
+
         x_shaped = tf.reshape(self.x, [-1, xshape, yshape, 1])
         # now declare the output data placeholder - 10 digits possible
-        self.y = tf.placeholder(tf.float32, [None, 10])
+
+        self.y = tf.placeholder(tf.float32, [None, nclasses])
 
         layer1 = create_new_conv_layer(x_shaped, 1, 32, [5, 5], [2, 2], name='layer1')
         layer2 = create_new_conv_layer(layer1, 32, 64, [5, 5], [2, 2], name='layer2')
-        flattened = tf.reshape(layer2, [-1, 7 * 7 * 64])
-        wd1 = tf.Variable(tf.truncated_normal([7 * 7 * 64, 1000], stddev=0.03), name='wd1')
+        flattened = tf.reshape(layer2, [-1, 8 * 8 * 64])# 7
+        wd1 = tf.Variable(tf.truncated_normal([8 * 8 * 64, 1000], stddev=0.03), name='wd1')
         bd1 = tf.Variable(tf.truncated_normal([1000], stddev=0.01), name='bd1')
         dense_layer1 = tf.matmul(flattened, wd1) + bd1
         dense_layer1 = tf.nn.relu(dense_layer1)
@@ -67,6 +72,7 @@ class TensorFlowNeuralNetwork:
         bd2 = tf.Variable(tf.truncated_normal([10], stddev=0.01), name='bd2')
         dense_layer2 = tf.matmul(dense_layer1, wd2) + bd2
         y_ = tf.nn.softmax(dense_layer2)
+
         self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dense_layer2, labels=self.y))
 
         # add an optimiser
@@ -82,12 +88,58 @@ class TensorFlowNeuralNetwork:
         self.writer = tf.summary.FileWriter('output')
         tf.summary.scalar('accuracy', self.accuracy)
 
+        self.merged = tf.summary.merge_all()
+
     def next_batch(self, batch_size, X, y):
+
         indices = np.random.choice(X.shape[0], batch_size, replace=False)
-        return X[:, indices], y[:, indices]
+        return X[indices, :], y[indices]
+
+    def vectorize_images(self, imageSet):
+        """
+        reshape an array of images
+        to an array [N images, pix y x pix x]
+        :param imageSet:array of images [pix y, pix x, channels, N images]
+        :return: array of images vectorized and grayscale
+        """
+
+        # if color channel is 3 use cv2.cvtColor to make a grayscale image
+        color = False
+        if imageSet.shape[2] == 3:
+            color = True
+        retSet = np.zeros((imageSet.shape[-1], imageSet.shape[0] * imageSet.shape[1]))
+        for i in range(imageSet.shape[-1]):
+            if color:
+                retSet[i, :] = cv2.cvtColor(imageSet[:, :, :, i], cv2.COLOR_BGR2GRAY).flatten('C')
+
+            else:
+                retSet[i, :] = imageSet[:, :, :, i].flatten('C')
+        return retSet
+    def vectorize_y(self, y):
+        """
+        take Y data with integer labelings and convert to array with binary index labeling
+        :param y: N x 1 array
+        :return: y_vec N x C binary array where C is number of classes
+        """
+        yvec = np.zeros((y.shape[0], len(np.unique(y))))
+        yvec[np.arange(y.shape[0]), (y - 1).flatten()] = 1
+        return yvec
 
     def train(self, X, y, testX, testy, epochs, batch_size):
-        merged = tf.summary.merge_all()
+        """
+
+        :param X: training data, numpy array of floats be sized N x D, where N is the number of samples, D is dimensionality
+        :param y: training classifications, numpy array of floats sized N x C, N as above, C is number of classes
+        :param testX: test data, T x D, T number of tests
+        :param testy:  test classifications, T x C
+        :param epochs: number of epochs to train over
+        :param batch_size: size of batch to draw from X and Y
+        :return: None, trains convolutional neural network and prints out errors
+        """
+        X = self.vectorize_images(X)
+        y = self.vectorize_y(y)
+        testX = self.vectorize_images(testX)
+        testy = self.vectorize_y(testy)
         with tf.Session() as sess:
             # initialise the variables
             sess.run(self.init_op)
@@ -102,17 +154,28 @@ class TensorFlowNeuralNetwork:
                 test_acc = sess.run(self.accuracy,
                                feed_dict={self.x: testX, self.y: testy})
                 print("Epoch:", (epoch + 1), "cost =", "{:.3f}".format(avg_cost), "test accuracy: {:.3f}".format(test_acc))
-                summary = sess.run(merged, feed_dict={self.x: testX, self.y: testy})
+                summary = sess.run(self.merged, feed_dict={self.x: testX, self.y: testy})
                 self.writer.add_summary(summary, epoch)
             self.writer.add_graph(sess.graph)
             print(sess.run(self.accuracy, feed_dict={self.x: testX, self.y: testy}))
             print("\nTraining complete!")
-        print(sess.run(self.accuracy, feed_dict={self.x: testX, self.y: testy}))
 
 
 if __name__ == "__main__":
+    trainfile = "datasets/housenumbers/train_32x32.mat"
+    trainset = loadmat(trainfile)
+    X = trainset['X']
+    y = trainset['y']
+    testfile = "datasets/housenumbers/test_32x32.mat"
+    testset = loadmat(testfile)
+    testX = testset['X'][:, :, :, 0:1000]
+    testy = testset['y'][0:1000, :]
     epochs = 5
-    batch_size = 500
-    nn = TensorFlowNeuralNetwork(28, 28)
-    nn.train(5, 10)
+    batch_size = 50
+    xshape = X.shape[0]
+    yshape = X.shape[1]
+
+    nn = TensorFlowNeuralNetwork(xshape, yshape, len(np.unique(y)))
+    nn.train(X, y, testX, testy, epochs, batch_size)
+
 
