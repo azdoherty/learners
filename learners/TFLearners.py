@@ -170,7 +170,7 @@ if __name__ == "__main__":
     testset = loadmat(testfile)
     testX = testset['X'][:, :, :, 0:1000]
     testy = testset['y'][0:1000, :]
-    epochs = 5
+    epochs = 10
     batch_size = 50
     xshape = X.shape[0]
     yshape = X.shape[1]
